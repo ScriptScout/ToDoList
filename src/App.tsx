@@ -21,6 +21,7 @@ function App() {
     // Use state hooks to store the todos and the input value
     const [todos, setTodos] = useState<Todo[]>([]);
     const [input, setInput] = useState("");
+    const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
 
     // Use effect hook to fetch the todos from the backend when the component mounts
     useEffect(() => {
@@ -42,17 +43,53 @@ function App() {
     // Handle the form submit event
     const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        // Create a new todo with the input value and a default status
-        const newTodo: Todo = {
-            id: "",
+        if (editingTodo) {
+            handleEditFormSubmit(event, editingTodo);
+        } else {
+            // Create a new todo with the input value and a default status
+            const newTodo: Todo = {
+                id: "",
+                description: input,
+                status: TodoStatus.OPEN,
+            };
+            // Post the new todo to the backend and update the state
+            axios
+                .post<Todo>("/api/todo", newTodo)
+                .then((response) => {
+                    setTodos([...todos, response.data]);
+                    setInput("");
+                })
+                .catch((error) => {
+                    console.error(error);
+                });
+        }
+    };
+
+    // Handle the edit button click event
+    const handleEditClick = (todo: Todo) => {
+        setEditingTodo(todo);
+        setInput(todo.description); // Set the input value to the current todo description
+    };
+
+    // Handle the edit form submit event
+    const handleEditFormSubmit = (
+        event: React.FormEvent<HTMLFormElement>,
+        todo: Todo
+    ) => {
+        event.preventDefault();
+        // Update the todo with the new description
+        const updatedTodo: Todo = {
+            ...todo,
             description: input,
-            status: TodoStatus.OPEN,
         };
-        // Post the new todo to the backend and update the state
+        // Put the updated todo to the backend and update the state
         axios
-            .post<Todo>("/api/todo", newTodo)
+            .put<Todo>(`/api/todo/${todo.id}`, updatedTodo)
             .then((response) => {
-                setTodos([...todos, response.data]);
+                setTodos(
+                    todos.map((t) => (t.id === response.data.id ? response.data : t))
+                );
+                setEditingTodo(null);
                 setInput("");
             })
             .catch((error) => {
@@ -108,8 +145,11 @@ function App() {
                     placeholder="Enter a new todo"
                     required
                 />
-                <button type="submit">Add</button>
+                <button type="submit">{editingTodo ? "Save" : "Add"}</button>
             </form>
+            {editingTodo && (
+                <button onClick={() => setEditingTodo(null)}>Cancel</button>
+            )}
             <ul>
                 {todos.map((todo) => (
                     <li key={todo.id}>
@@ -122,6 +162,7 @@ function App() {
                             <option value={TodoStatus.IN_PROGRESS}>In Progress</option>
                             <option value={TodoStatus.DONE}>Done</option>
                         </select>
+                        <button onClick={() => handleEditClick(todo)}>Edit</button>
                         <button onClick={() => handleDeleteClick(todo)}>Delete</button>
                     </li>
                 ))}
