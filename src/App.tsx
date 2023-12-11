@@ -1,6 +1,8 @@
-// src/App.tsx
+// App.tsx
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import TodoList from "./TodoList";
+import TodoColumn from "./TodoColumn";
 
 // Define the Todo type
 type Todo = {
@@ -14,50 +16,50 @@ enum TodoStatus {
     OPEN = "OPEN",
     IN_PROGRESS = "IN_PROGRESS",
     DONE = "DONE",
-}
+};
 
-// Define the App component
-function App() {
-    // Use state hooks to store the todos and the input value
-    const [todos, setTodos] = useState<Todo[]>([]);
-    const [input, setInput] = useState("");
-    const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
+// App-Komponente
+class App extends React.Component {
+    state = {
+        todos: [] as Todo[],
+        input: "",
+        editingTodo: null as Todo | null,
+    };
 
-    // Use effect hook to fetch the todos from the backend when the component mounts
-    useEffect(() => {
+    componentDidMount() {
         axios
             .get<Todo[]>("/api/todo")
             .then((response) => {
-                setTodos(response.data);
+                this.setState({ todos: response.data });
             })
             .catch((error) => {
                 console.error(error);
             });
-    }, []);
+    }
 
-    // Handle the input change event
-    const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setInput(event.target.value);
+    handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        this.setState({ input: event.target.value });
     };
 
-    // Handle the form submit event
-    const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+        const { editingTodo, input, todos } = this.state;
+
         if (editingTodo) {
-            handleEditFormSubmit(event, editingTodo);
+            this.handleEditFormSubmit(event, editingTodo);
         } else {
-            // Create a new todo with the input value and a default status
             const newTodo: Todo = {
                 id: "",
                 description: input,
                 status: TodoStatus.OPEN,
             };
-            // Post the new todo to the backend and update the state
             axios
                 .post<Todo>("/api/todo", newTodo)
                 .then((response) => {
-                    setTodos([...todos, response.data]);
-                    setInput("");
+                    this.setState({
+                        todos: [...todos, response.data],
+                        input: "",
+                    });
                 })
                 .catch((error) => {
                     console.error(error);
@@ -65,160 +67,128 @@ function App() {
         }
     };
 
-    // Handle the edit button click event
-    const handleEditClick = (todo: Todo) => {
-        setEditingTodo(todo);
-        setInput(todo.description); // Set the input value to the current todo description
+    handleEditClick = (todo: Todo) => {
+        this.setState({ editingTodo: todo, input: todo.description });
     };
 
-    // Handle the edit form submit event
-    const handleEditFormSubmit = (
+    handleEditFormSubmit = (
         event: React.FormEvent<HTMLFormElement>,
         todo: Todo
     ) => {
         event.preventDefault();
-        // Update the todo with the new description
+        const { input, todos } = this.state;
+
         const updatedTodo: Todo = {
             ...todo,
             description: input,
         };
-        // Put the updated todo to the backend and update the state
+
         axios
             .put<Todo>(`/api/todo/${todo.id}`, updatedTodo)
             .then((response) => {
-                setTodos(
-                    todos.map((t) => (t.id === response.data.id ? response.data : t))
-                );
-                setEditingTodo(null);
-                setInput("");
+                this.setState({
+                    todos: todos.map((t) =>
+                        t.id === response.data.id ? response.data : t
+                    ),
+                    editingTodo: null,
+                    input: "",
+                });
             })
             .catch((error) => {
                 console.error(error);
             });
     };
 
-    // Handle the status change event
-    const handleStatusChange = (
+    handleStatusChange = (
         event: React.ChangeEvent<HTMLSelectElement>,
         todo: Todo
     ) => {
-        // Update the todo with the new status
+        const { todos } = this.state;
+
         const updatedTodo: Todo = {
             ...todo,
             status: event.target.value as TodoStatus,
         };
-        // Put the updated todo to the backend and update the state
+
         axios
             .put<Todo>(`/api/todo/${todo.id}`, updatedTodo)
             .then((response) => {
-                setTodos(
-                    todos.map((t) => (t.id === response.data.id ? response.data : t))
-                );
+                this.setState({
+                    todos: todos.map((t) =>
+                        t.id === response.data.id ? response.data : t
+                    ),
+                });
             })
             .catch((error) => {
                 console.error(error);
             });
     };
 
-    // Handle the delete button click event
-    const handleDeleteClick = (todo: Todo) => {
-        // Delete the todo from the backend and update the state
+    handleDeleteClick = (todo: Todo) => {
+        const { todos } = this.state;
+
         axios
             .delete(`/api/todo/${todo.id}`)
             .then(() => {
-                setTodos(todos.filter((t) => t.id !== todo.id));
+                this.setState({
+                    todos: todos.filter((t) => t.id !== todo.id),
+                });
             })
             .catch((error) => {
                 console.error(error);
             });
     };
 
-    // Render the app
-    return (
-        <div className="App">
-            <h1>Todo App</h1>
-            <form onSubmit={handleFormSubmit}>
-                <input
-                    type="text"
-                    value={input}
-                    onChange={handleInputChange}
-                    placeholder="Enter a new todo"
-                    required
-                />
-                <button type="submit">{editingTodo ? "Save" : "Add"}</button>
-            </form>
-            {editingTodo && (
-                <button onClick={() => setEditingTodo(null)}>Cancel</button>
-            )}
+    render() {
+        const { todos, input, editingTodo } = this.state;
 
-            <div className="columns">
-                <div className="column">
-                    <h2>OPEN</h2>
-                    <ul>
-                        {todos
-                            .filter((todo) => todo.status === TodoStatus.OPEN)
-                            .map((todo) => (
-                                <li key={todo.id}>
-                                    <span>{todo.description}</span>
-                                    <select
-                                        value={todo.status}
-                                        onChange={(event) => handleStatusChange(event, todo)}
-                                    >
-                                        <option value={TodoStatus.OPEN}>Open</option>
-                                        <option value={TodoStatus.IN_PROGRESS}>In Progress</option>
-                                        <option value={TodoStatus.DONE}>Done</option>
-                                    </select>
-                                    <button onClick={() => handleEditClick(todo)}>Edit</button>
-                                </li>
-                            ))}
-                    </ul>
-                </div>
-                <div className="column">
-                    <h2>IN PROGRESS</h2>
-                    <ul>
-                        {todos
-                            .filter((todo) => todo.status === TodoStatus.IN_PROGRESS)
-                            .map((todo) => (
-                                <li key={todo.id}>
-                                    <span>{todo.description}</span>
-                                    <select
-                                        value={todo.status}
-                                        onChange={(event) => handleStatusChange(event, todo)}
-                                    >
-                                        <option value={TodoStatus.OPEN}>Open</option>
-                                        <option value={TodoStatus.IN_PROGRESS}>In Progress</option>
-                                        <option value={TodoStatus.DONE}>Done</option>
-                                    </select>
-                                    <button onClick={() => handleEditClick(todo)}>Edit</button>
-                                </li>
-                            ))}
-                    </ul>
-                </div>
-                <div className="column">
-                    <h2>DONE</h2>
-                    <ul>
-                        {todos
-                            .filter((todo) => todo.status === TodoStatus.DONE)
-                            .map((todo) => (
-                                <li key={todo.id}>
-                                    <span>{todo.description}</span>
-                                    <select
-                                        value={todo.status}
-                                        onChange={(event) => handleStatusChange(event, todo)}
-                                    >
-                                        <option value={TodoStatus.OPEN}>Open</option>
-                                        <option value={TodoStatus.IN_PROGRESS}>In Progress</option>
-                                        <option value={TodoStatus.DONE}>Done</option>
-                                    </select>
-                                    <button onClick={() => handleEditClick(todo)}>Edit</button>
-                                    <button onClick={() => handleDeleteClick(todo)}>Delete</button>
-                                </li>
-                            ))}
-                    </ul>
+        return (
+            <div className="App">
+                <h1>Todo App</h1>
+                <form onSubmit={this.handleFormSubmit}>
+                    <input
+                        type="text"
+                        value={input}
+                        onChange={this.handleInputChange}
+                        placeholder="Enter a new todo"
+                        required
+                    />
+                    <button type="submit">
+                        {editingTodo ? "Save" : "Add"}
+                    </button>
+                </form>
+                {editingTodo && (
+                    <button onClick={() => this.setState({ editingTodo: null })}>
+                        Cancel
+                    </button>
+                )}
+
+                <div className="columns">
+                    <TodoColumn
+                        title="OPEN"
+                        todos={todos.filter((todo) => todo.status === TodoStatus.OPEN)}
+                        onEditClick={this.handleEditClick}
+                        onDeleteClick={this.handleDeleteClick}
+                        onStatusChange={this.handleStatusChange}
+                    />
+                    <TodoColumn
+                        title="IN PROGRESS"
+                        todos={todos.filter((todo) => todo.status === TodoStatus.IN_PROGRESS)}
+                        onEditClick={this.handleEditClick}
+                        onDeleteClick={this.handleDeleteClick}
+                        onStatusChange={this.handleStatusChange}
+                    />
+                    <TodoColumn
+                        title="DONE"
+                        todos={todos.filter((todo) => todo.status === TodoStatus.DONE)}
+                        onEditClick={this.handleEditClick}
+                        onDeleteClick={this.handleDeleteClick}
+                        onStatusChange={this.handleStatusChange}
+                    />
                 </div>
             </div>
-        </div>
-    );
+        );
+    }
 }
 
 export default App;
