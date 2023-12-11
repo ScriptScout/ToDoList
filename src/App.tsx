@@ -150,23 +150,73 @@ function App() {
             {editingTodo && (
                 <button onClick={() => setEditingTodo(null)}>Cancel</button>
             )}
-            <ul>
-                {todos.map((todo) => (
-                    <li key={todo.id}>
-                        <span>{todo.description}</span>
-                        <select
-                            value={todo.status}
-                            onChange={(event) => handleStatusChange(event, todo)}
-                        >
-                            <option value={TodoStatus.OPEN}>Open</option>
-                            <option value={TodoStatus.IN_PROGRESS}>In Progress</option>
-                            <option value={TodoStatus.DONE}>Done</option>
-                        </select>
-                        <button onClick={() => handleEditClick(todo)}>Edit</button>
-                        <button onClick={() => handleDeleteClick(todo)}>Delete</button>
-                    </li>
-                ))}
-            </ul>
+
+            <div className="columns">
+                <div className="column">
+                    <h2>OPEN</h2>
+                    <ul>
+                        {todos
+                            .filter((todo) => todo.status === TodoStatus.OPEN)
+                            .map((todo) => (
+                                <li key={todo.id}>
+                                    <span>{todo.description}</span>
+                                    <select
+                                        value={todo.status}
+                                        onChange={(event) => handleStatusChange(event, todo)}
+                                    >
+                                        <option value={TodoStatus.OPEN}>Open</option>
+                                        <option value={TodoStatus.IN_PROGRESS}>In Progress</option>
+                                        <option value={TodoStatus.DONE}>Done</option>
+                                    </select>
+                                    <button onClick={() => handleEditClick(todo)}>Edit</button>
+                                </li>
+                            ))}
+                    </ul>
+                </div>
+                <div className="column">
+                    <h2>IN PROGRESS</h2>
+                    <ul>
+                        {todos
+                            .filter((todo) => todo.status === TodoStatus.IN_PROGRESS)
+                            .map((todo) => (
+                                <li key={todo.id}>
+                                    <span>{todo.description}</span>
+                                    <select
+                                        value={todo.status}
+                                        onChange={(event) => handleStatusChange(event, todo)}
+                                    >
+                                        <option value={TodoStatus.OPEN}>Open</option>
+                                        <option value={TodoStatus.IN_PROGRESS}>In Progress</option>
+                                        <option value={TodoStatus.DONE}>Done</option>
+                                    </select>
+                                    <button onClick={() => handleEditClick(todo)}>Edit</button>
+                                </li>
+                            ))}
+                    </ul>
+                </div>
+                <div className="column">
+                    <h2>DONE</h2>
+                    <ul>
+                        {todos
+                            .filter((todo) => todo.status === TodoStatus.DONE)
+                            .map((todo) => (
+                                <li key={todo.id}>
+                                    <span>{todo.description}</span>
+                                    <select
+                                        value={todo.status}
+                                        onChange={(event) => handleStatusChange(event, todo)}
+                                    >
+                                        <option value={TodoStatus.OPEN}>Open</option>
+                                        <option value={TodoStatus.IN_PROGRESS}>In Progress</option>
+                                        <option value={TodoStatus.DONE}>Done</option>
+                                    </select>
+                                    <button onClick={() => handleEditClick(todo)}>Edit</button>
+                                    <button onClick={() => handleDeleteClick(todo)}>Delete</button>
+                                </li>
+                            ))}
+                    </ul>
+                </div>
+            </div>
         </div>
     );
 }
