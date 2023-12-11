@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import TodoList from "./TodoList";
 import TodoColumn from "./TodoColumn";
+import "./App.css"; // Importiere die CSS-Datei
 
 // Define the Todo type
 type Todo = {
@@ -16,7 +17,7 @@ enum TodoStatus {
     OPEN = "OPEN",
     IN_PROGRESS = "IN_PROGRESS",
     DONE = "DONE",
-};
+}
 
 // App-Komponente
 class App extends React.Component {
@@ -173,7 +174,9 @@ class App extends React.Component {
                     />
                     <TodoColumn
                         title="IN PROGRESS"
-                        todos={todos.filter((todo) => todo.status === TodoStatus.IN_PROGRESS)}
+                        todos={todos.filter(
+                            (todo) => todo.status === TodoStatus.IN_PROGRESS
+                        )}
                         onEditClick={this.handleEditClick}
                         onDeleteClick={this.handleDeleteClick}
                         onStatusChange={this.handleStatusChange}
