@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import TodoList from "./TodoList";
 import TodoColumn from "./TodoColumn";
-import "./App.css"; // Importiere die CSS-Datei
+import "./App.css"; // Import the CSS file
 
 // Define the Todo type
 type Todo = {
@@ -19,7 +19,7 @@ enum TodoStatus {
     DONE = "DONE",
 }
 
-// App-Komponente
+// App component
 class App extends React.Component {
     state = {
         todos: [] as Todo[],
@@ -27,7 +27,9 @@ class App extends React.Component {
         editingTodo: null as Todo | null,
     };
 
+    // Lifecycle method: This is called after the component is added to the DOM
     componentDidMount() {
+        // Fetch todos from the backend when the component mounts
         axios
             .get<Todo[]>("/api/todo")
             .then((response) => {
@@ -38,17 +40,22 @@ class App extends React.Component {
             });
     }
 
+    // Handle input change event
     handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        // Update the input value in the state
         this.setState({ input: event.target.value });
     };
 
+    // Handle form submission event
     handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         const { editingTodo, input, todos } = this.state;
 
         if (editingTodo) {
+            // If editing, submit the updated todo
             this.handleEditFormSubmit(event, editingTodo);
         } else {
+            // If not editing, submit a new todo
             const newTodo: Todo = {
                 id: "",
                 description: input,
@@ -68,10 +75,13 @@ class App extends React.Component {
         }
     };
 
+    // Handle edit click event
     handleEditClick = (todo: Todo) => {
+        // Set the todo to be edited and update the input value
         this.setState({ editingTodo: todo, input: todo.description });
     };
 
+    // Handle edit form submission event
     handleEditFormSubmit = (
         event: React.FormEvent<HTMLFormElement>,
         todo: Todo
@@ -79,6 +89,7 @@ class App extends React.Component {
         event.preventDefault();
         const { input, todos } = this.state;
 
+        // Submit the updated todo to the backend
         const updatedTodo: Todo = {
             ...todo,
             description: input,
@@ -87,6 +98,7 @@ class App extends React.Component {
         axios
             .put<Todo>(`/api/todo/${todo.id}`, updatedTodo)
             .then((response) => {
+                // Update the state with the updated todo
                 this.setState({
                     todos: todos.map((t) =>
                         t.id === response.data.id ? response.data : t
@@ -100,20 +112,24 @@ class App extends React.Component {
             });
     };
 
+    // Handle status change event
     handleStatusChange = (
         event: React.ChangeEvent<HTMLSelectElement>,
         todo: Todo
     ) => {
         const { todos } = this.state;
 
+        // Update the todo with the new status
         const updatedTodo: Todo = {
             ...todo,
             status: event.target.value as TodoStatus,
         };
 
+        // Submit the updated todo status to the backend
         axios
             .put<Todo>(`/api/todo/${todo.id}`, updatedTodo)
             .then((response) => {
+                // Update the state with the updated todo
                 this.setState({
                     todos: todos.map((t) =>
                         t.id === response.data.id ? response.data : t
@@ -125,12 +141,15 @@ class App extends React.Component {
             });
     };
 
+    // Handle delete click event
     handleDeleteClick = (todo: Todo) => {
         const { todos } = this.state;
 
+        // Delete the todo from the backend
         axios
             .delete(`/api/todo/${todo.id}`)
             .then(() => {
+                // Update the state by removing the deleted todo
                 this.setState({
                     todos: todos.filter((t) => t.id !== todo.id),
                 });
@@ -143,50 +162,83 @@ class App extends React.Component {
     render() {
         const { todos, input, editingTodo } = this.state;
 
+        // Group the todos by status
+        const groupedTodos = todos.reduce(
+            (acc: Record<TodoStatus, Todo[]>, todo) => {
+                acc[todo.status].push(todo);
+                return acc;
+            },
+            {
+                [TodoStatus.OPEN]: [],
+                [TodoStatus.IN_PROGRESS]: [],
+                [TodoStatus.DONE]: [],
+            }
+        );
+
         return (
             <div className="App">
-                <h1>Todo App</h1>
-                <form onSubmit={this.handleFormSubmit}>
-                    <input
-                        type="text"
-                        value={input}
-                        onChange={this.handleInputChange}
-                        placeholder="Enter a new todo"
-                        required
-                    />
-                    <button type="submit">
-                        {editingTodo ? "Save" : "Add"}
-                    </button>
-                </form>
-                {editingTodo && (
-                    <button onClick={() => this.setState({ editingTodo: null })}>
-                        Cancel
-                    </button>
-                )}
+                {/* Trello logo */}
+                <img src="https://th.bing.com/th?id=OIP.VoIUtvnEHmq08IiQWEci7AHaEK&w=333&h=187&c=8&rs=1&qlt=90&o=6&dpr=2&pid=3.1&rm=2" alt="Trello logo" className="logo" />
 
+                {/* App title */}
+                <h1>Trello Clone</h1>
+
+                {/* Form container */}
+                <div className="form-container">
+                    <form onSubmit={this.handleFormSubmit}>
+                        {/* Input for adding/editing tasks */}
+                        <input
+                            type="text"
+                            value={input}
+                            onChange={this.handleInputChange}
+                            placeholder="Enter a new task"
+                        />
+                    </form>
+
+                    {/* Button group for adding/updating tasks and cancelling editing */}
+                    <div className="button-group">
+                        <button type="submit" form="form">
+                            {editingTodo ? "Update" : "Add"}
+                        </button>
+                        {editingTodo && (
+                            <button
+                                type="button"
+                                className="cancel"
+                                onClick={() =>
+                                    this.setState({
+                                        editingTodo: null,
+                                        input: "",
+                                    })
+                                }
+                            >
+                                Cancel
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {/* Columns for different task statuses */}
                 <div className="columns">
                     <TodoColumn
-                        title="OPEN"
-                        todos={todos.filter((todo) => todo.status === TodoStatus.OPEN)}
+                        title="Open"
+                        todos={groupedTodos[TodoStatus.OPEN]}
+                        onStatusChange={this.handleStatusChange}
                         onEditClick={this.handleEditClick}
                         onDeleteClick={this.handleDeleteClick}
-                        onStatusChange={this.handleStatusChange}
                     />
                     <TodoColumn
-                        title="IN PROGRESS"
-                        todos={todos.filter(
-                            (todo) => todo.status === TodoStatus.IN_PROGRESS
-                        )}
+                        title="In Progress"
+                        todos={groupedTodos[TodoStatus.IN_PROGRESS]}
+                        onStatusChange={this.handleStatusChange}
                         onEditClick={this.handleEditClick}
                         onDeleteClick={this.handleDeleteClick}
-                        onStatusChange={this.handleStatusChange}
                     />
                     <TodoColumn
-                        title="DONE"
-                        todos={todos.filter((todo) => todo.status === TodoStatus.DONE)}
+                        title="Done"
+                        todos={groupedTodos[TodoStatus.DONE]}
+                        onStatusChange={this.handleStatusChange}
                         onEditClick={this.handleEditClick}
                         onDeleteClick={this.handleDeleteClick}
-                        onStatusChange={this.handleStatusChange}
                     />
                 </div>
             </div>
